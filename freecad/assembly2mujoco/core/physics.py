@@ -72,16 +72,39 @@ def apply_physics(xml, specification):
             raise ValueError("Unknown collision body or duplicate collision name")
         names.add(geom["name"])
         kind = geom.get("type", "box")
-        if kind not in ("box", "cylinder"):
+        if kind not in ("box", "cylinder", "mesh"):
             raise ValueError(
                 "Only box/cylinder collision primitives are currently supported"
             )
-        if len(geom["size"]) != (3 if kind == "box" else 2) or min(geom["size"]) <= 0:
+        if (
+            len(geom["size"]) != (2 if kind == "cylinder" else 3)
+            or min(geom["size"]) <= 0
+        ):
             raise ValueError("Invalid collision half-extents")
         if not np.isfinite(geom["size"] + geom["pos"] + geom["quat"]).all():
             raise ValueError("Nonfinite collision geometry")
         if abs(np.linalg.norm(geom["quat"]) - 1) > 1e-8:
             raise ValueError("Collision quaternion must have unit length")
+        extras = {}
+        if kind == "mesh":
+            vertices = np.asarray(geom["vertices"], dtype=float)
+            if (
+                vertices.ndim != 2
+                or vertices.shape[1] != 3
+                or len(vertices) < 4
+                or not np.isfinite(vertices).all()
+            ):
+                raise ValueError(
+                    "Collision mesh needs at least four finite 3D vertices"
+                )
+            asset = xml.find("asset")
+            if asset is None:
+                asset = ET.SubElement(xml, "asset")
+            mesh_name = geom["name"] + "_mesh"
+            ET.SubElement(
+                asset, "mesh", name=mesh_name, vertex=numbers(vertices.reshape(-1))
+            )
+            extras["mesh"] = mesh_name
         ET.SubElement(
             bodies[geom["body"]],
             "geom",
@@ -95,6 +118,7 @@ def apply_physics(xml, specification):
             contype="0",
             conaffinity="0",
             rgba="0.2 0.7 0.9 0.35",
+            **extras,
         )
     contact = xml.find("contact")
     for pair in specification.get("pairs", []):

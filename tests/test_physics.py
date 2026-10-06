@@ -119,3 +119,34 @@ def test_cylinder_collision_primitive():
     )
     model = mujoco.MjModel.from_xml_string(ET.tostring(xml).decode())
     assert model.geom("shaft").type[0] == mujoco.mjtGeom.mjGEOM_CYLINDER
+
+
+def test_convex_collision_mesh_uses_si_vertices():
+    xml = fixture_xml()
+    vertices = [
+        [x, y, z]
+        for x in (-0.002, 0.002)
+        for y in (-0.003, 0.003)
+        for z in (-0.004, 0.004)
+    ]
+    apply_physics(
+        xml,
+        dict(
+            collisions=[
+                dict(
+                    body="Base",
+                    name="hull",
+                    type="mesh",
+                    pos=[0, 0, 0],
+                    quat=[1, 0, 0, 0],
+                    size=[0.002, 0.003, 0.004],
+                    vertices=vertices,
+                )
+            ]
+        ),
+    )
+    model = mujoco.MjModel.from_xml_string(ET.tostring(xml).decode())
+    assert model.geom("hull").type[0] == mujoco.mjtGeom.mjGEOM_MESH
+    assert model.geom_aabb[model.geom("hull").id, 3:] == pytest.approx(
+        [0.002, 0.003, 0.004], abs=1e-8
+    )
