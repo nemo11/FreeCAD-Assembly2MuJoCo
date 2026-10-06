@@ -5,6 +5,7 @@
 ### Added
 
 - Optional SI physical export data for collision boxes, explicit contact pairs and validated body inertials.
+- Cylinder collision primitives and ideal coupled fixed-tendon motor transmissions with rotor inertia and sensors.
 
 ### Changed
 

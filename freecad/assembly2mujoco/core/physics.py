@@ -71,9 +71,12 @@ def apply_physics(xml, specification):
         if geom["body"] not in bodies or geom["name"] in names:
             raise ValueError("Unknown collision body or duplicate collision name")
         names.add(geom["name"])
-        if geom.get("type", "box") != "box":
-            raise ValueError("Only box collision primitives are currently supported")
-        if len(geom["size"]) != 3 or min(geom["size"]) <= 0:
+        kind = geom.get("type", "box")
+        if kind not in ("box", "cylinder"):
+            raise ValueError(
+                "Only box/cylinder collision primitives are currently supported"
+            )
+        if len(geom["size"]) != (3 if kind == "box" else 2) or min(geom["size"]) <= 0:
             raise ValueError("Invalid collision half-extents")
         if not np.isfinite(geom["size"] + geom["pos"] + geom["quat"]).all():
             raise ValueError("Nonfinite collision geometry")
@@ -83,7 +86,7 @@ def apply_physics(xml, specification):
             bodies[geom["body"]],
             "geom",
             name=geom["name"],
-            type="box",
+            type=kind,
             pos=numbers(geom["pos"]),
             quat=numbers(geom["quat"]),
             size=numbers(geom["size"]),
@@ -105,3 +108,44 @@ def apply_physics(xml, specification):
             condim="3",
             friction="0.5 0.5 0.001 0.0001 0.0001",
         )
+    if specification.get("motors"):
+        add_transmissions(xml, specification["motors"])
+
+
+def add_transmissions(xml, motors):
+    """Fixed-tendon motor coordinates in radians, effort in N.m."""
+    joints = {joint.get("name") for joint in xml.iter("joint") if joint.get("name")}
+    driven = {name for motor in motors for name in motor["coefficients"]}
+    if not driven <= joints:
+        raise ValueError("Transmission references unknown joints")
+    actuator = xml.find("actuator")
+    for item in list(actuator):
+        if item.get("joint") in driven:
+            actuator.remove(item)
+    tendon = xml.find("tendon")
+    sensor = xml.find("sensor")
+    names = set()
+    for motor in motors:
+        name = motor["name"]
+        if name in names or not motor["coefficients"]:
+            raise ValueError("Duplicate motor name or empty transmission")
+        names.add(name)
+        coefficients = list(motor["coefficients"].values())
+        rotor = motor.get("rotor_inertia", 0)
+        if (
+            not np.isfinite(coefficients + [rotor]).all()
+            or rotor < 0
+            or all(c == 0 for c in coefficients)
+        ):
+            raise ValueError("Invalid transmission coefficients/inertia")
+        fixed = ET.SubElement(
+            tendon, "fixed", name=name + "_shaft", armature=str(rotor)
+        )
+        for joint, coefficient in motor["coefficients"].items():
+            ET.SubElement(fixed, "joint", joint=joint, coef=str(coefficient))
+        ET.SubElement(actuator, "motor", name=name, tendon=name + "_shaft", gear="1")
+        ET.SubElement(sensor, "tendonpos", name=name + "_angle", tendon=name + "_shaft")
+        ET.SubElement(
+            sensor, "tendonvel", name=name + "_velocity", tendon=name + "_shaft"
+        )
+        ET.SubElement(sensor, "actuatorfrc", name=name + "_torque", actuator=name)
