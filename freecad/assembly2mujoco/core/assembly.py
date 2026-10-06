@@ -209,14 +209,21 @@ class AssemblyGraphEdge:
         # Try to get limits from joint
         if self.joint.EnableAngleMin:
             # Convert degrees to radian
-            limits["lower"] = self.joint.AngleMin * math.pi / 180
+            limits["lower"] = self.joint.AngleMin.Value * math.pi / 180
         elif self.joint.EnableLengthMin:
-            limits["lower"] = self.joint.LengthMin
+            limits["lower"] = self.joint.LengthMin.Value / 1000
 
         if self.joint.EnableAngleMax:
-            limits["upper"] = self.joint.AngleMax * math.pi / 180
+            limits["upper"] = self.joint.AngleMax.Value * math.pi / 180
         elif self.joint.EnableLengthMax:
-            limits["upper"] = self.joint.LengthMax
+            limits["upper"] = self.joint.LengthMax.Value / 1000
+
+        if self.joint.JointType in ("Slider", "Revolute") and (
+            (limits["lower"] is None) != (limits["upper"] is None)
+        ):
+            raise NotImplementedError(
+                f"{WORKBENCH_NAME}: One-sided joint limits are not supported for '{self.label}'; enable both limits or neither"
+            )
 
         # Calculate range if both limits are defined
         range: str | None = None

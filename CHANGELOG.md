@@ -8,6 +8,8 @@
 
 ### Fixed
 
+- Export numeric joint limits in metres/radians and reject unsupported one-sided slider/revolute limits.
+
 ## [0.4.0](https://github.com/AnesBenmerzoug/FreeCAD-Assembly2MuJoCo/releases/tag/v0.4.0) - 2026-05-05
 
 ### Added
