@@ -164,7 +164,11 @@ class MuJoCoExporter:
         self.sensor = ET.SubElement(self.mujoco, "sensor")
 
     def export_assembly(
-        self, assembly_graph: AssemblyGraph, *, export_dir: Path | None = None
+        self,
+        assembly_graph: AssemblyGraph,
+        *,
+        export_dir: Path | None = None,
+        physics: dict | None = None,
     ) -> ET.Element:
         """Main export method"""
 
@@ -223,6 +227,10 @@ class MuJoCoExporter:
             if unused_edges:
                 self.process_kinematic_loops(unused_edges)
 
+        if physics is not None:
+            from freecad.assembly2mujoco.core.physics import apply_physics
+
+            apply_physics(self.mujoco, physics)
         return self.mujoco
 
     @staticmethod

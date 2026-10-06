@@ -4,6 +4,8 @@
 
 ### Added
 
+- Optional SI physical export data for collision boxes, explicit contact pairs and validated body inertials.
+
 ### Changed
 
 ### Fixed
