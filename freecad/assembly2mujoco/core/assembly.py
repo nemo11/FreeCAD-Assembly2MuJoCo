@@ -61,7 +61,8 @@ class AssemblyGraphNode:
         quat = self.part.Placement.Rotation.Q
         # Convert mm to m and convert both vectors to strings
         pos = f"{pos.x / 1000} {pos.y / 1000} {pos.z / 1000}"
-        quat = f"{quat[0]} {quat[1]} {quat[2]} {quat[3]}"
+        # FreeCAD stores x,y,z,w; MJCF expects w,x,y,z.
+        quat = f"{quat[3]} {quat[0]} {quat[1]} {quat[2]}"
         return pos, quat
 
     @property
