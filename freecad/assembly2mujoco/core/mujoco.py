@@ -316,10 +316,8 @@ class MuJoCoExporter:
 
         node = tree.get_nodes()[0]
         body = self.add_body(node, worldbody)
-        ET.SubElement(
-            body,
-            "freejoint",
-        )
+        if not node.is_grounded:
+            self.add_free_joint_to_body(body)
 
     def process_tree_no_recursion(
         self,
@@ -368,7 +366,8 @@ class MuJoCoExporter:
         children_nodes = tree.get_neighbors(current_node)
         if not children_nodes and parent_node is None:
             # Handle case when there is a single node in the graph
-            self.add_free_joint_to_body(current_body)
+            if not current_node.is_grounded:
+                self.add_free_joint_to_body(current_body)
         else:
             for child_node in tree.get_neighbors(current_node):
                 child_body = self.process_tree(

@@ -10,6 +10,7 @@
 
 - Export numeric joint limits in metres/radians and reject unsupported one-sided slider/revolute limits.
 - Write site orientations in MuJoCo quaternion order (w,x,y,z).
+- Keep isolated grounded parts fixed while preserving free motion for ungrounded parts.
 
 ## [0.4.0](https://github.com/AnesBenmerzoug/FreeCAD-Assembly2MuJoCo/releases/tag/v0.4.0) - 2026-05-05
 
